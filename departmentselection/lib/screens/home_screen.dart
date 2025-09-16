@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/bottom_navigation.dart';
 import '../utils/constants.dart';
 import 'capture_screen.dart';
 import 'status_tracker_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Get the current user
+    User? user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
       appBar: AppBar(
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.location_city,
               color: Colors.white,
             ),
@@ -30,6 +35,18 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Sign Out",
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
@@ -40,7 +57,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
+            // Welcome Section with user email
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -55,6 +72,23 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Show user's email
+                  if (user != null && user.email != null) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.account_circle, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          user.email!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   const Text(
                     'Welcome to CivicHero!',
                     style: TextStyle(
@@ -103,9 +137,9 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Quick Stats
             Row(
               children: [
@@ -128,9 +162,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Recent Activity
             const Text(
               'Recent Activity',
@@ -141,7 +175,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             _buildActivityCard(
               'Pothole Reported',
               'Road Department',
@@ -157,9 +191,9 @@ class HomeScreen extends StatelessWidget {
                 );
               },
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             _buildActivityCard(
               'Streetlight Fixed',
               'Electrical Department',
@@ -168,9 +202,9 @@ class HomeScreen extends StatelessWidget {
               Icons.lightbulb_outline,
               () {},
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             _buildActivityCard(
               'Drainage Overflow',
               'Water & Sewerage',
@@ -179,7 +213,7 @@ class HomeScreen extends StatelessWidget {
               Icons.water_drop_outlined,
               () {},
             ),
-            
+
             const SizedBox(height: 100), // Space for bottom navigation
           ],
         ),
