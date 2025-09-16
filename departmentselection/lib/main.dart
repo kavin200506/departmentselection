@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'utils/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'screens/login_screen.dart';
 
-// Only ONE main function!
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -27,7 +27,7 @@ class DepartmentSelectionApp extends StatelessWidget {
           elevation: 4,
         ),
       ),
-      home: const HomeScreen(),
+      home: const LoginScreen(), // Show LoginScreen first!
       debugShowCheckedModeBanner: false,
     );
   }
