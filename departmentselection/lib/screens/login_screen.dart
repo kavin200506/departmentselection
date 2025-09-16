@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'home_screen.dart'; // Import your HomeScreen here
-import 'register_screen.dart'; // Import your RegisterScreen here
+import 'home_screen.dart';        // Import your HomeScreen here
+import 'register_screen.dart';    // Import your RegisterScreen here
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,6 +32,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> resetPassword() async {
+    if (emailController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please enter your email to reset password.";
+      });
+      return;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: emailController.text.trim(),
+      );
+      setState(() {
+        errorMessage = "Password reset email sent! Check your inbox.";
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message ?? "Could not send reset email.";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,6 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: signIn,
               child: const Text("Login"),
             ),
+            TextButton(
+              onPressed: resetPassword,
+              child: const Text("Forgot Password?"),
+            ),
             if (errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -64,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ),
-            // --------- SIGN UP BUTTON ---------
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -74,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               child: const Text("Don't have an account? Sign Up"),
             ),
-            // ----------------------------------
           ],
         ),
       ),
