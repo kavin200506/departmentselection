@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "727957080527",
+    "project_id": "civichero-480a3",
+    "storage_bucket": "civichero-480a3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727957080527:android:916d248a7cfb642b40eaba",
+        "android_client_info": {
+          "package_name": "com.example.departmentselection"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh3Ym2EqQvv6Mtc6aH_4ryjf0Q614Eq7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
