@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_profile_screen.dart';
+import 'home_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -11,6 +12,19 @@ class ProfileScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+              (route) => false,
+            );
+          },
+        ),
+      ),
       backgroundColor: Colors.blue[50],
       body: user == null
           ? const Center(
@@ -29,7 +43,6 @@ class ProfileScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || !snapshot.data!.exists) {
-                  // PROFILE NOT FOUND → Show Add Profile Details button!
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -51,13 +64,13 @@ class ProfileScreen extends StatelessWidget {
                           label: const Text(
                             'Add Profile Details',
                             style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
+                                fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 28, vertical: 14),
+                                horizontal: 28, vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -67,8 +80,7 @@ class ProfileScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const EditProfileScreen(),
-                              ),
+                                  builder: (context) => const EditProfileScreen()),
                             );
                           },
                         ),
@@ -82,12 +94,13 @@ class ProfileScreen extends StatelessWidget {
                 final email = user?.email ?? 'Not added';
 
                 final fields = [
-                  {'label': 'Name', 'key': 'name', 'icon': Icons.person},
+                  {'label': 'Full Name', 'key': 'fullName', 'icon': Icons.person},
                   {'label': 'Email', 'value': email, 'icon': Icons.email},
-                  {'label': 'Mobile', 'key': 'mobile', 'icon': Icons.phone},
-                  {'label': 'Age', 'key': 'age', 'icon': Icons.cake},
-                  {'label': 'Nickname', 'key': 'nickname', 'icon': Icons.tag},
-                  {'label': 'Quote', 'key': 'quote', 'icon': Icons.format_quote},
+                  {'label': 'Phone Number', 'key': 'phonenumber', 'icon': Icons.phone},
+                  {'label': 'Department/Role', 'key': 'role', 'icon': Icons.work},
+                  {'label': 'Address', 'key': 'address', 'icon': Icons.house},
+                  {'label': 'Date of Birth', 'key': 'dob', 'icon': Icons.cake},
+                  {'label': 'Gender', 'key': 'gender', 'icon': Icons.wc},
                 ];
 
                 int filledFields = 0;
@@ -100,7 +113,10 @@ class ProfileScreen extends StatelessWidget {
                     }
                   } else {
                     final value = data[field['key']] ?? '';
-                    if (value.toString().trim().isNotEmpty && value.toString() != '0') {
+                    if (field['key'] == 'dob' && value is Timestamp) {
+                      if (value.toDate().toString().isNotEmpty) filledFields++;
+                    } else if (value.toString().trim().isNotEmpty &&
+                        value.toString() != '0') {
                       filledFields++;
                     }
                   }
@@ -109,7 +125,6 @@ class ProfileScreen extends StatelessWidget {
 
                 return Stack(
                   children: [
-                    // Top gradient container
                     Container(
                       height: 240,
                       decoration: const BoxDecoration(
@@ -194,7 +209,6 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 22),
-                          // Profile info card
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -226,11 +240,17 @@ class ProfileScreen extends StatelessWidget {
                                   final value = field.containsKey('value')
                                       ? field['value']
                                       : data[field['key']];
-                                  final displayValue = (value == null ||
-                                          value.toString().trim().isEmpty ||
-                                          value.toString() == '0')
-                                      ? 'Not added'
-                                      : value.toString();
+                                  String displayValue;
+                                  if (field['key'] == 'dob' &&
+                                      value is Timestamp) {
+                                    displayValue = value.toDate().toString().split(' ').first;
+                                  } else {
+                                    displayValue = (value == null ||
+                                            value.toString().trim().isEmpty ||
+                                            value.toString() == '0')
+                                        ? 'Not added'
+                                        : value.toString();
+                                  }
                                   final isMissing = displayValue == 'Not added';
                                   return Card(
                                     shape: RoundedRectangleBorder(
@@ -278,7 +298,6 @@ class ProfileScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Floating Edit button
                     Positioned(
                       top: 55,
                       right: 28,

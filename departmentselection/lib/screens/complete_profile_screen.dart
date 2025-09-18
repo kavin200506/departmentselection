@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
+import '../models/profile.dart';
 import 'home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -11,30 +13,46 @@ class CompleteProfileScreen extends StatefulWidget {
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
-  final mobileController = TextEditingController();
-  final ageController = TextEditingController();
-  final nicknameController = TextEditingController();
-  final quoteController = TextEditingController();
+  final phoneController = TextEditingController();
+  final departmentController = TextEditingController();
+  final addressController = TextEditingController();
+  final dobController = TextEditingController();
+  final genderController = TextEditingController();
 
   bool loading = false;
   String errorMessage = '';
+  late String email; // Fetched from FirebaseAuth
+
+  @override
+  void initState() {
+    super.initState();
+    email = FirebaseAuth.instance.currentUser?.email ?? '';
+  }
 
   Future<void> saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { loading = true; errorMessage = ''; });
+    setState(() {
+      loading = true;
+      errorMessage = '';
+    });
     try {
-      await ProfileService.upsertProfile({
-        'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'age': ageController.text.trim(),
-        'nickname': nicknameController.text.trim(),
-        'quote': quoteController.text.trim(),
-      });
+      final newProfile = Profile(
+        fullName: nameController.text.trim(),
+        email: email,
+        phoneNumber: phoneController.text.trim(),
+        department: departmentController.text.trim(),
+        address: addressController.text.trim(),
+        dob: DateTime.tryParse(dobController.text.trim()) ?? DateTime.now(),
+        gender: genderController.text.trim(),
+      );
+      await ProfileService.upsertProfile(newProfile);
       Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (_) => HomeScreen()),
       );
     } catch (e) {
-      setState(() { errorMessage = 'Could not save profile!'; });
+      setState(() {
+        errorMessage = 'Could not save profile!';
+      });
     }
     setState(() => loading = false);
   }
@@ -48,9 +66,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Complete Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
-          // Light blue → white vertical gradient
           gradient: LinearGradient(
             colors: [Color(0xffc8e6fc), Color(0xffffffff)],
             begin: Alignment.topCenter,
@@ -68,11 +94,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   Center(
                     child: Column(
                       children: [
+                        // (Optional static icon for illustration, can remove if you want)
                         CircleAvatar(
                           radius: 34,
                           backgroundColor: Colors.blueAccent.withOpacity(0.13),
-                          child: const Icon(Icons.person_add_alt_1,
-                              color: Colors.blue, size: 36),
+                          child: const Icon(Icons.person_add_alt_1, color: Colors.blue, size: 36),
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -86,7 +112,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          "Tell us bit about yourself \n(or you can skip this for now)",
+                          "Tell us a bit about yourself \n(or you can skip this for now)",
                           style: TextStyle(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w500),
                           textAlign: TextAlign.center,
                         ),
@@ -95,8 +121,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(19),
@@ -116,26 +141,46 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           icon: Icons.person,
                         ),
                         _textField(
-                          controller: mobileController,
-                          label: "Mobile",
+                          controller: phoneController,
+                          label: "Phone Number",
                           icon: Icons.phone_rounded,
                           inputType: TextInputType.phone,
                         ),
                         _textField(
-                          controller: ageController,
-                          label: "Age",
+                          controller: departmentController,
+                          label: "Department/Role",
+                          icon: Icons.work_rounded,
+                        ),
+                        _textField(
+                          controller: addressController,
+                          label: "Address",
+                          icon: Icons.house_rounded,
+                        ),
+                        _textField(
+                          controller: dobController,
+                          label: "Date of Birth (yyyy-mm-dd)",
                           icon: Icons.cake_rounded,
-                          inputType: TextInputType.number,
+                          inputType: TextInputType.datetime,
                         ),
                         _textField(
-                          controller: nicknameController,
-                          label: "Nickname",
-                          icon: Icons.tag_faces_rounded,
+                          controller: genderController,
+                          label: "Gender",
+                          icon: Icons.wc_rounded,
                         ),
-                        _textField(
-                          controller: quoteController,
-                          label: "Your Quote",
-                          icon: Icons.format_quote_rounded,
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          enabled: false,
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
+                            filled: true,
+                            fillColor: Colors.blueGrey.withOpacity(0.07),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          initialValue: email,
                         ),
                         const SizedBox(height: 20),
                         if (errorMessage.isNotEmpty)
@@ -160,7 +205,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               child: Text(
                                 loading ? "Saving..." : "Save Profile",
                                 style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                                    fontSize: 18, fontWeight: FontWeight.bold),
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
@@ -215,7 +260,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           floatingLabelStyle: const TextStyle(
               color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        validator: (v) => null,
+        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
       ),
     );
   }

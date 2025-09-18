@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
+import '../models/profile.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -10,10 +11,12 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
-  final mobileController = TextEditingController();
-  final ageController = TextEditingController();
-  final nicknameController = TextEditingController();
-  final quoteController = TextEditingController();
+  final phoneController = TextEditingController();
+  final departmentController = TextEditingController();
+  final addressController = TextEditingController();
+  final dobController = TextEditingController();
+  final genderController = TextEditingController();
+  String email = '';
   bool loading = false;
   String errorMessage = '';
 
@@ -26,29 +29,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _loadProfile() async {
     final profile = await ProfileService.fetchProfile();
     if (profile != null) {
-      nameController.text     = profile['name'] ?? '';
-      mobileController.text   = profile['mobile'] ?? '';
-      ageController.text      = profile['age'] ?? '';
-      nicknameController.text = profile['nickname'] ?? '';
-      quoteController.text    = profile['quote'] ?? '';
+      nameController.text = profile.fullName;
+      email = profile.email;
+      phoneController.text = profile.phoneNumber;
+      departmentController.text = profile.department;
+      addressController.text = profile.address;
+      dobController.text = profile.dob.toIso8601String().split('T').first;
+      genderController.text = profile.gender;
     }
     setState(() {});
   }
 
   Future<void> saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { loading = true; errorMessage = ''; });
+    setState(() {
+      loading = true;
+      errorMessage = '';
+    });
     try {
-      await ProfileService.upsertProfile({
-        'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'age': ageController.text.trim(),
-        'nickname': nicknameController.text.trim(),
-        'quote': quoteController.text.trim(),
-      });
+      final updatedProfile = Profile(
+        fullName: nameController.text.trim(),
+        email: email,
+        phoneNumber: phoneController.text.trim(),
+        department: departmentController.text.trim(),
+        address: addressController.text.trim(),
+        dob: DateTime.tryParse(dobController.text.trim()) ?? DateTime.now(),
+        gender: genderController.text.trim(),
+      );
+      await ProfileService.upsertProfile(updatedProfile);
       Navigator.pop(context);
     } catch (e) {
-      setState(() { errorMessage = 'Could not update profile!'; });
+      setState(() {
+        errorMessage = 'Could not update profile!';
+      });
     }
     setState(() => loading = false);
   }
@@ -56,17 +69,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     nameController.dispose();
-    mobileController.dispose();
-    ageController.dispose();
-    nicknameController.dispose();
-    quoteController.dispose();
+    phoneController.dispose();
+    departmentController.dispose();
+    addressController.dispose();
+    dobController.dispose();
+    genderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Light blue gradient top
+      appBar: AppBar(
+        title: const Text('Edit Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -86,6 +108,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Center(
                     child: Column(
                       children: [
+                        // You may remove this for a minimalist look
                         CircleAvatar(
                           radius: 36,
                           backgroundColor: Colors.blueAccent.withOpacity(0.16),
@@ -95,8 +118,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const Text(
                           "Edit Profile",
                           style: TextStyle(
-                            fontSize: 30, fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5, color: Color(0xff0a2240)
+                              fontSize: 30, fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5, color: Color(0xff0a2240)
                           ),
                         ),
                         const SizedBox(height: 26),
@@ -104,8 +127,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(21),
@@ -125,31 +147,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           icon: Icons.person,
                         ),
                         _textField(
-                          controller: mobileController,
-                          label: "Mobile",
+                          controller: phoneController,
+                          label: "Phone Number",
                           icon: Icons.phone_rounded,
                           inputType: TextInputType.phone,
                         ),
                         _textField(
-                          controller: ageController,
-                          label: "Age",
+                          controller: departmentController,
+                          label: "Department/Role",
+                          icon: Icons.work_rounded,
+                        ),
+                        _textField(
+                          controller: addressController,
+                          label: "Address",
+                          icon: Icons.house_rounded,
+                        ),
+                        _textField(
+                          controller: dobController,
+                          label: "Date of Birth (yyyy-mm-dd)",
                           icon: Icons.cake_rounded,
-                          inputType: TextInputType.number,
+                          inputType: TextInputType.datetime,
                         ),
                         _textField(
-                          controller: nicknameController,
-                          label: "Nickname",
-                          icon: Icons.tag_faces_rounded,
-                        ),
-                        _textField(
-                          controller: quoteController,
-                          label: "Your Quote",
-                          icon: Icons.format_quote_rounded,
+                          controller: genderController,
+                          label: "Gender",
+                          icon: Icons.wc_rounded,
                         ),
                         const SizedBox(height: 18),
+                        TextFormField(
+                          enabled: false,
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
+                            filled: true,
+                            fillColor: Colors.blueGrey.withOpacity(0.07),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          initialValue: email,
+                        ),
                         if (errorMessage.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(bottom:8),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 15)),
                           ),
                         SizedBox(
@@ -157,12 +198,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: ElevatedButton.icon(
                             icon: loading
                                 ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2,
-                                    ),
-                                  )
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2,
+                              ),
+                            )
                                 : const Icon(Icons.save),
                             label: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -224,7 +265,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           floatingLabelStyle: const TextStyle(
               color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        validator: (v) => null,
+        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
       ),
     );
   }
