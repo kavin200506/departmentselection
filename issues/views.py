@@ -9,6 +9,10 @@ def admin_dashboard(request):
     """Render the admin dashboard HTML page"""
     return render(request, 'admin_dashboard.html')
 
+def test_connection(request):
+    """Render the database connection test page"""
+    return render(request, 'test_connection.html')
+
 def get_issues(request):
     """API endpoint to get all issues as JSON"""
     issues = Issue.objects.all()

@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # Web pages
     path('', views.admin_dashboard, name='admin_dashboard'),
+    path('test/', views.test_connection, name='test_connection'),
     
     # API endpoints
     path('api/issues/', views.get_issues, name='get_issues'),

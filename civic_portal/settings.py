@@ -52,15 +52,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'civic_portal.wsgi.application'
 
-# Database - Supabase PostgreSQL
+# Database - Supabase PostgreSQL (External Database)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='5432'),
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': '2q6tguwVFSyOxTJR',
+        'HOST': 'db.nnguxuuoxsrxadniklus.supabase.co',
+        'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'require',
         },

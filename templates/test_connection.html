@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .data-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Database Connection Test</h1>
+        <p>This page tests the connection between your website and Supabase database.</p>
+        
+        <div id="connectionStatus" class="status info">
+            Click "Test Connection" to check if your database is working
+        </div>
+        
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="loadSampleData()">Load Sample Data</button>
+        <button onclick="viewIssues()">View All Issues</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            const resultsDiv = document.getElementById('results');
+            
+            statusDiv.className = 'status info';
+            statusDiv.textContent = 'Testing connection...';
+            resultsDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/stats/');
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ Database connection successful!';
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="data-display">
+                            <h3>Database Statistics:</h3>
+                            <p><strong>Total Issues:</strong> ${data.total_problems}</p>
+                            <p><strong>Active Issues:</strong> ${data.active_problems}</p>
+                            <p><strong>Resolved Issues:</strong> ${data.resolved_problems}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Server returned error: ' + response.status);
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Database connection failed: ' + error.message;
+                
+                resultsDiv.innerHTML = `
+                    <div class="data-display">
+                        <h3>Troubleshooting Steps:</h3>
+                        <ol>
+                            <li>Make sure you created a .env file with your Supabase credentials</li>
+                            <li>Check that your Supabase project is active</li>
+                            <li>Verify your database password is correct</li>
+                            <li>Run: <code>python manage.py migrate</code></li>
+                        </ol>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadSampleData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="status info">Loading sample data...</div>';
+            
+            try {
+                // Create sample issues
+                const sampleIssues = [
+                    {
+                        person_id: 'TEST_USER_001',
+                        location: 'Test Street, Sample City',
+                        problem_type: 'pothole',
+                        urgency_level: 'medium',
+                        description: 'This is a test issue created to verify the system works.',
+                        image_url: 'https://via.placeholder.com/400x300?text=Test+Issue'
+                    }
+                ];
+                
+                for (const issue of sampleIssues) {
+                    const response = await fetch('/api/issues/create/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(issue)
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        resultsDiv.innerHTML = `
+                            <div class="status success">
+                                ✅ Sample data created successfully! 
+                                Issue ID: ${result.problem_id}
+                            </div>
+                        `;
+                    } else {
+                        throw new Error('Failed to create sample data');
+                    }
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Failed to create sample data: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function viewIssues() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="status info">Loading issues...</div>';
+            
+            try {
+                const response = await fetch('/api/issues/');
+                if (response.ok) {
+                    const issues = await response.json();
+                    
+                    if (issues.length === 0) {
+                        resultsDiv.innerHTML = `
+                            <div class="data-display">
+                                <h3>No issues found</h3>
+                                <p>Click "Load Sample Data" to create some test issues.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let html = '<div class="data-display"><h3>All Issues in Database:</h3><ul>';
+                    issues.forEach(issue => {
+                        html += `
+                            <li>
+                                <strong>ID:</strong> ${issue.problem_id} | 
+                                <strong>Type:</strong> ${issue.problem_type} | 
+                                <strong>Status:</strong> ${issue.status} | 
+                                <strong>Location:</strong> ${issue.location}
+                            </li>
+                        `;
+                    });
+                    html += '</ul></div>';
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    throw new Error('Failed to load issues');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Failed to load issues: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
