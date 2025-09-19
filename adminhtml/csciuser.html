@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Civic Issue</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 30px; }
+    .form-container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    input, textarea { width: 100%; margin-bottom: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Report an Issue</h2>
+    <input type="text" id="person_id" placeholder="Your ID">
+    <input type="text" id="location" placeholder="Location">
+    <input type="text" id="problem_type" placeholder="Problem Type">
+    <textarea id="description" placeholder="Description"></textarea>
+    <button onclick="submitIssue()">Submit</button>
+    <p id="statusMsg"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjJXTNE-P6DQbujQCyzH-BA6vPBi3g_ds",
+      authDomain: "csci-81961.firebaseapp.com",
+      databaseURL: "https://csci-81961-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "csci-81961",
+      storageBucket: "csci-81961.appspot.com",
+      messagingSenderId: "820737989334",
+      appId: "1:820737989334:web:57ae22a6d50dbedc4d0777",
+      measurementId: "G-7118H50EFM"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.submitIssue = function() {
+      const person_id = document.getElementById("person_id").value || "unknown";
+      const location = document.getElementById("location").value || "unspecified";
+      const problem_type = document.getElementById("problem_type").value || "general";
+      const description = document.getElementById("description").value || "N/A";
+
+      const newIssue = {
+        person_id,
+        datetime: new Date().toISOString(),
+        location,
+        problem_type,
+        description,
+        status: "pending"
+      };
+
+      push(ref(db, "issues/"), newIssue).then(() => {
+        document.getElementById("statusMsg").textContent = "✅ Issue submitted successfully!";
+        document.getElementById("person_id").value = "";
+        document.getElementById("location").value = "";
+        document.getElementById("problem_type").value = "";
+        document.getElementById("description").value = "";
+      });
+    };
+  </script>
+</body>
+</html>
