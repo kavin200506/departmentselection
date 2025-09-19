@@ -13,64 +13,79 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   String _selectedFilter = 'All';
-  
+
   final List<Complaint> _complaints = [
     Complaint(
-      id: 'CPT-2025-001234',
+      complainId: 'CPT-2025-001234',
       issueType: 'Pothole',
       department: 'Road Department',
       urgency: 'High',
       latitude: 28.6139,
       longitude: 77.2090,
+      address: 'MG Road, Delhi',
+      description: 'Large pothole causing traffic issues.',
       status: 'In Progress',
       reportedDate: DateTime.now().subtract(const Duration(hours: 2)),
-      imagePath: '',
+      imageUrl: '',
+      userId: 'user1',
     ),
     Complaint(
-      id: 'CPT-2025-001233',
+      complainId: 'CPT-2025-001233',
       issueType: 'Streetlight Broken',
       department: 'Electrical Department',
       urgency: 'Medium',
       latitude: 28.6129,
       longitude: 77.2080,
+      address: 'Sector 14, Noida',
+      description: 'Streetlight not working for 2 days.',
       status: 'Resolved',
       reportedDate: DateTime.now().subtract(const Duration(days: 1)),
-      imagePath: '',
+      imageUrl: '',
+      userId: 'user2',
     ),
     Complaint(
-      id: 'CPT-2025-001232',
+      complainId: 'CPT-2025-001232',
       issueType: 'Drainage Overflow',
       department: 'Water & Sewerage',
       urgency: 'Critical',
       latitude: 28.6149,
       longitude: 77.2100,
+      address: 'Block D, South Extension',
+      description: 'Drainage water overflowing since yesterday.',
       status: 'Assigned',
       reportedDate: DateTime.now().subtract(const Duration(days: 3)),
-      imagePath: '',
+      imageUrl: '',
+      userId: 'user1',
     ),
     Complaint(
-      id: 'CPT-2025-001231',
+      complainId: 'CPT-2025-001231',
       issueType: 'Garbage Pile',
       department: 'Sanitation Department',
       urgency: 'Low',
       latitude: 28.6159,
       longitude: 77.2110,
+      address: 'Community Park, Dwarka',
+      description: 'Garbage heap not collected for a week.',
       status: 'Resolved',
       reportedDate: DateTime.now().subtract(const Duration(days: 7)),
-      imagePath: '',
+      imageUrl: '',
+      userId: 'user3',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    List<Complaint> filteredComplaints = _selectedFilter == 'All' 
-        ? _complaints 
+    List<Complaint> filteredComplaints = _selectedFilter == 'All'
+        ? _complaints
         : _complaints.where((c) => c.status == _selectedFilter).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.lightGrey,
+      backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         title: const Text('Complaint History'),
+        elevation: 0.0,
+        backgroundColor: Colors.white.withOpacity(0.97),
+        foregroundColor: AppColors.primaryBlue,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -84,68 +99,79 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           // Filter Tabs
           Container(
-            height: 50,
+            height: 56,
             margin: const EdgeInsets.all(16),
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: ['All', 'In Progress', 'Assigned', 'Resolved'].map((filter) {
                 bool isSelected = _selectedFilter == filter;
-                return Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  child: FilterChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedFilter = filter;
-                      });
-                    },
-                    backgroundColor: Colors.white,
-                    selectedColor: AppColors.primaryBlue.withOpacity(0.1),
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppColors.primaryBlue : AppColors.darkGrey,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeInOut,
+                    child: FilterChip(
+                      label: Text(filter,
+                          style: TextStyle(
+                              color: isSelected ? Colors.white : AppColors.darkGrey,
+                              fontWeight: FontWeight.bold)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedFilter = filter;
+                        });
+                      },
+                      backgroundColor: Colors.white,
+                      selectedColor: AppColors.primaryBlue,
+                      labelStyle: TextStyle(fontSize: isSelected ? 17 : 15),
+                      elevation: isSelected ? 7 : 0,
+                      shadowColor: isSelected
+                          ? AppColors.primaryBlue.withOpacity(0.18)
+                          : Colors.transparent,
+                      side: BorderSide(
+                        color: isSelected
+                            ? AppColors.primaryBlue
+                            : Colors.grey.withOpacity(0.08),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(11)),
                     ),
                   ),
                 );
               }).toList(),
             ),
           ),
-          
+
           // Statistics Row
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
                 Expanded(
                   child: _buildStatCard(
-                    'Total',
-                    _complaints.length.toString(),
-                    AppColors.primaryBlue,
-                  ),
+                      'Total', _complaints.length.toString(), AppColors.primaryBlue),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: _buildStatCard(
-                    'Resolved',
-                    _complaints.where((c) => c.status == 'Resolved').length.toString(),
-                    AppColors.primaryGreen,
-                  ),
+                      'Resolved',
+                      _complaints.where((c) => c.status == 'Resolved').length.toString(),
+                      AppColors.primaryGreen),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: _buildStatCard(
-                    'Pending',
-                    _complaints.where((c) => c.status != 'Resolved').length.toString(),
-                    AppColors.primaryOrange,
-                  ),
+                      'Pending',
+                      _complaints.where((c) => c.status != 'Resolved').length.toString(),
+                      AppColors.primaryOrange),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Complaints List
           Expanded(
             child: filteredComplaints.isEmpty
@@ -153,10 +179,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 80,
-                          color: Colors.grey[400],
+                        TweenAnimationBuilder(
+                          duration: const Duration(milliseconds: 900),
+                          tween: Tween<double>(begin: 1, end: 1.15),
+                          curve: Curves.elasticOut,
+                          builder: (context, value, child) =>
+                              Transform.scale(scale: value, child: child),
+                          child: Icon(
+                            Icons.inbox_rounded,
+                            size: 100,
+                            color: Colors.grey[400],
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -164,20 +197,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'Your complaint history will appear here',
-                          style: TextStyle(
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     itemCount: filteredComplaints.length,
                     itemBuilder: (context, index) {
                       return _buildComplaintCard(filteredComplaints[index]);
@@ -192,15 +224,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildStatCard(String title, String count, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.10), Colors.white.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: color.withOpacity(0.09),
             spreadRadius: 1,
-            blurRadius: 4,
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -210,18 +246,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Text(
             count,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 27,
               fontWeight: FontWeight.bold,
               color: color,
+              shadows: [
+                Shadow(
+                    color: color.withOpacity(0.25),
+                    blurRadius: 7,
+                    offset: const Offset(0, 1))
+              ],
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.darkGrey,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.darkGrey, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -231,14 +270,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildComplaintCard(Complaint complaint) {
     Color statusColor = _getStatusColor(complaint.status);
     IconData issueIcon = _getIssueIcon(complaint.issueType);
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       child: Card(
-        elevation: 2,
+        elevation: 4,
+        shadowColor: statusColor.withOpacity(0.16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
         ),
+        color: Colors.white.withOpacity(0.99),
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -248,27 +289,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        gradient: LinearGradient(
+                          colors: [statusColor.withOpacity(0.18), Colors.white],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         issueIcon,
                         color: statusColor,
-                        size: 20,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 13),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,17 +321,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Text(
                             complaint.issueType,
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.darkGrey,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
-                            complaint.id,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.darkGrey,
+                            complaint.complainId,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.darkGrey.withOpacity(0.67),
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -294,82 +339,66 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          colors: [
+                            statusColor.withOpacity(0.13),
+                            Colors.white.withOpacity(0.6)
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: statusColor.withOpacity(0.1), width: 1.3),
                       ),
                       child: Text(
                         complaint.status,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           color: statusColor,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 12),
-                
+                const SizedBox(height: 13),
                 Row(
                   children: [
-                    Icon(
-                      Icons.business,
-                      size: 14,
-                      color: AppColors.darkGrey,
-                    ),
+                    Icon(Icons.business, size: 14, color: AppColors.darkGrey.withOpacity(0.7)),
                     const SizedBox(width: 4),
                     Text(
                       complaint.department,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.darkGrey,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppColors.darkGrey.withOpacity(0.81), fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 16),
-                    Icon(
-                      Icons.priority_high,
-                      size: 14,
-                      color: _getUrgencyColor(complaint.urgency),
-                    ),
+                    Icon(Icons.priority_high,
+                        size: 14, color: _getUrgencyColor(complaint.urgency)),
                     const SizedBox(width: 4),
                     Text(
                       complaint.urgency,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _getUrgencyColor(complaint.urgency),
-                      ),
+                      style: TextStyle(fontSize: 12, color: _getUrgencyColor(complaint.urgency), fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 8),
-                
+                const SizedBox(height: 7),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: AppColors.darkGrey,
-                        ),
+                        const Icon(Icons.schedule, size: 13, color: AppColors.darkGrey),
                         const SizedBox(width: 4),
                         Text(
                           _formatDateTime(complaint.reportedDate),
                           style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.darkGrey,
-                          ),
+                              fontSize: 12, color: AppColors.darkGrey, fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
-                    Icon(
+                    const Icon(
                       Icons.arrow_forward_ios,
-                      size: 12,
+                      size: 14,
                       color: AppColors.darkGrey,
                     ),
                   ],
@@ -428,7 +457,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {

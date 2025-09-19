@@ -9,16 +9,20 @@ environment:
   flutter: ">=3.0.0"
 
 dependencies:
-  cloud_firestore: ^6.0.1
-  firebase_core: ^4.1.0
-  firebase_auth: ^6.0.2
-
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+
+  # Firebase plugins (let Flutter resolve versions automatically)
+  firebase_core:
+  cloud_firestore:
+  firebase_auth:
+  firebase_storage:
+
   camera: ^0.10.5
   geolocator: ^10.0.0
   geocoding: ^2.1.1
+  path_provider:        # <-- for file/directory access
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +31,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/images/
