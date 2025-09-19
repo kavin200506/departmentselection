@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Civic Issue Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; background: #f5f7fa; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #2c3e50;
+      color: white;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar ul li {
+      padding: 15px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .sidebar ul li:hover {
+      background: #34495e;
+    }
+
+    /* Main content */
+    .main {
+      margin-left: 220px;
+      flex-grow: 1;
+      padding: 20px;
+    }
+
+    header {
+      background: #3498db;
+      color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .dashboard {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      width: 30%;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .heatmap, table {
+      margin-top: 20px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th { background: #3498db; color: #fff; }
+    img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; }
+    button { padding: 5px 10px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #2ecc71; }
+    
+    .status-pending { background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px; }
+    .status-resolved { background-color: #27ae60; color: white; padding: 3px 8px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin</h2>
+    <ul>
+      <li onclick="showSection('dashboard')">Dashboard</li>
+      <li onclick="showSection('current')">Current Issues</li>
+      <li onclick="showSection('resolved')">Resolved</li>
+      <li onclick="showSection('reports')">Reports</li>
+      <li onclick="showSection('settings')">Settings</li>
+      <li onclick="logout()">Logout</li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <header>
+      <h1>Civic Issue Reporting - Admin Dashboard</h1>
+    </header>
+
+    <!-- Dashboard Section -->
+    <section id="dashboardSection">
+      <div class="dashboard">
+        <div class="card">
+          <h2>Total Problems Filed</h2>
+          <p id="totalProblems">Loading...</p>
+        </div>
+        <div class="card">
+          <h2>Active Problems</h2>
+          <p id="activeProblems">Loading...</p>
+        </div>
+        <div class="card">
+          <h2>Issues Solved</h2>
+          <p id="issuesSolved">Loading...</p>
+        </div>
+      </div>
+
+      <div class="heatmap">
+        <h2>Problem Types Distribution</h2>
+        <canvas id="heatmapChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Current Issues Section -->
+    <section id="currentSection" style="display:none;">
+      <h2>Current Issues</h2>
+      <table id="issuesTable">
+        <thead>
+          <tr>
+            <th>Person ID</th>
+            <th>Problem ID</th>
+            <th>Date/Time</th>
+            <th>Location</th>
+            <th>Problem Type</th>
+            <th>Urgency</th>
+            <th>Description</th>
+            <th>Image</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Resolved Issues Section -->
+    <section id="resolvedSection" style="display:none;">
+      <h2>Resolved Issues (History)</h2>
+      <table id="resolvedTable">
+        <thead>
+          <tr>
+            <th>Problem ID</th>
+            <th>Date Resolved</th>
+            <th>Location</th>
+            <th>Problem Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Reports Section -->
+    <section id="reportsSection" style="display:none;">
+      <h2>Reports & Analytics</h2>
+      <div class="dashboard">
+        <div class="card">
+          <h3>Most Common Issue</h3>
+          <p id="commonIssue">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Average Resolution Time</h3>
+          <p id="avgTime">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Resolution Rate</h3>
+          <p id="resolutionRate">Loading...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settingsSection" style="display:none;">
+      <h2>System Settings</h2>
+      <div class="card">
+        <h3>Database Status</h3>
+        <p id="dbStatus">Checking connection...</p>
+        <button onclick="testConnection()">Test Connection</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    function showSection(section) {
+      // Hide all sections
+      const sections = ['dashboard', 'current', 'resolved', 'reports', 'settings'];
+      sections.forEach(s => {
+        document.getElementById(s + "Section").style.display = "none";
+      });
+      
+      // Show selected section
+      document.getElementById(section + "Section").style.display = "block";
+      
+      // Load data for specific sections
+      if (section === 'current') {
+        loadIssues();
+      } else if (section === 'resolved') {
+        loadResolvedIssues();
+      } else if (section === 'reports') {
+        loadReports();
+      }
+    }
+
+    function logout() {
+      if (confirm("Are you sure you want to logout?")) {
+        alert("Logged out successfully!");
+        // Add actual logout logic later
+      }
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const response = await fetch("/api/stats/");
+        const stats = await response.json();
+        
+        document.getElementById("totalProblems").textContent = stats.total_problems;
+        document.getElementById("activeProblems").textContent = stats.active_problems;
+        document.getElementById("issuesSolved").textContent = stats.resolved_problems;
+      } catch (err) {
+        console.error("Error loading dashboard stats:", err);
+        document.getElementById("totalProblems").textContent = "Error";
+        document.getElementById("activeProblems").textContent = "Error";
+        document.getElementById("issuesSolved").textContent = "Error";
+      }
+    }
+
+    async function loadIssues() {
+      try {
+        const response = await fetch("/api/issues/");
+        const issues = await response.json();
+        
+        const tableBody = document.querySelector("#issuesTable tbody");
+        tableBody.innerHTML = "";
+        
+        // Filter only active issues
+        const activeIssues = issues.filter(issue => issue.status !== 'resolved');
+        
+        if (activeIssues.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">No active issues found</td></tr>';
+          return;
+        }
+        
+        activeIssues.forEach(issue => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${issue.person_id}</td>
+            <td>${issue.problem_id}</td>
+            <td>${issue.datetime}</td>
+            <td title="${issue.location}">${issue.location.substring(0, 30)}${issue.location.length > 30 ? '...' : ''}</td>
+            <td>${issue.problem_type}</td>
+            <td><span class="urgency-${issue.urgency_level}">${issue.urgency_level}</span></td>
+            <td title="${issue.description}">${issue.description.substring(0, 50)}${issue.description.length > 50 ? '...' : ''}</td>
+            <td><img src="${issue.image_url}" alt="Issue Image" onerror="this.src='https://via.placeholder.com/60x60?text=No+Image'"></td>
+            <td><span class="status-${issue.status}">${issue.status}</span></td>
+            <td><button onclick="resolveIssue(${issue.problem_id})">Resolve</button></td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        // Update chart
+        updateChart(issues);
+
+      } catch (err) {
+        console.error("Error loading issues:", err);
+        document.querySelector("#issuesTable tbody").innerHTML = 
+          '<tr><td colspan="10" style="text-align:center;color:red;">Error loading issues</td></tr>';
+      }
+    }
+
+    async function loadResolvedIssues() {
+      try {
+        const response = await fetch("/api/issues/");
+        const issues = await response.json();
+        
+        const tableBody = document.querySelector("#resolvedTable tbody");
+        tableBody.innerHTML = "";
+        
+        // Filter only resolved issues
+        const resolvedIssues = issues.filter(issue => issue.status === 'resolved');
+        
+        if (resolvedIssues.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No resolved issues found</td></tr>';
+          return;
+        }
+        
+        resolvedIssues.forEach(issue => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${issue.problem_id}</td>
+            <td>${issue.datetime}</td>
+            <td title="${issue.location}">${issue.location.substring(0, 40)}${issue.location.length > 40 ? '...' : ''}</td>
+            <td>${issue.problem_type}</td>
+            <td title="${issue.description}">${issue.description.substring(0, 60)}${issue.description.length > 60 ? '...' : ''}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error("Error loading resolved issues:", err);
+        document.querySelector("#resolvedTable tbody").innerHTML = 
+          '<tr><td colspan="5" style="text-align:center;color:red;">Error loading resolved issues</td></tr>';
+      }
+    }
+
+    function updateChart(issues) {
+      const ctx = document.getElementById("heatmapChart").getContext("2d");
+      
+      // Clear existing chart
+      if (window.myChart) {
+        window.myChart.destroy();
+      }
+      
+      const typeCounts = {};
+      
+      issues.forEach(i => {
+        typeCounts[i.problem_type] = (typeCounts[i.problem_type] || 0) + 1;
+      });
+
+      const colors = [
+        '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'
+      ];
+
+      window.myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(typeCounts),
+          datasets: [{
+            label: "Number of Issues",
+            data: Object.values(typeCounts),
+            backgroundColor: colors.slice(0, Object.keys(typeCounts).length),
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+
+    async function resolveIssue(problemId) {
+      if (!confirm(`Are you sure you want to resolve issue #${problemId}?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch("/api/issues/resolve/", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ problem_id: problemId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert("Issue resolved successfully!");
+          loadIssues();
+          loadDashboardStats();
+        } else {
+          alert("Error: " + result.message);
+        }
+      } catch (err) {
+        console.error("Error resolving issue:", err);
+        alert("Error resolving issue. Please try again.");
+      }
+    }
+
+    async function loadReports() {
+      try {
+        const response = await fetch("/api/issues/");
+        const issues = await response.json();
+        
+        // Calculate most common issue type
+        const typeCounts = {};
+        issues.forEach(i => {
+          typeCounts[i.problem_type] = (typeCounts[i.problem_type] || 0) + 1;
+        });
+        
+        const mostCommon = Object.keys(typeCounts).reduce((a, b) => 
+          typeCounts[a] > typeCounts[b] ? a : b
+        );
+        
+        document.getElementById("commonIssue").textContent = mostCommon || "No data";
+        document.getElementById("avgTime").textContent = "2.5 days"; // Placeholder
+        
+        const totalIssues = issues.length;
+        const resolvedIssues = issues.filter(i => i.status === 'resolved').length;
+        const resolutionRate = totalIssues > 0 ? ((resolvedIssues / totalIssues) * 100).toFixed(1) : 0;
+        
+        document.getElementById("resolutionRate").textContent = resolutionRate + "%";
+        
+      } catch (err) {
+        console.error("Error loading reports:", err);
+        document.getElementById("commonIssue").textContent = "Error";
+        document.getElementById("avgTime").textContent = "Error";
+        document.getElementById("resolutionRate").textContent = "Error";
+      }
+    }
+
+    async function testConnection() {
+      document.getElementById("dbStatus").textContent = "Testing...";
+      
+      try {
+        const response = await fetch("/api/stats/");
+        if (response.ok) {
+          document.getElementById("dbStatus").textContent = "✅ Database connected successfully!";
+        } else {
+          document.getElementById("dbStatus").textContent = "❌ Database connection failed";
+        }
+      } catch (err) {
+        document.getElementById("dbStatus").textContent = "❌ Connection error";
+      }
+    }
+
+    // Load initial data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      loadDashboardStats();
+      // Initially load chart with empty data
+      updateChart([]);
+      
+      // Test database connection on settings page
+      document.getElementById("dbStatus").textContent = "Ready to test...";
+    });
+  </script>
+</body>
+</html>
