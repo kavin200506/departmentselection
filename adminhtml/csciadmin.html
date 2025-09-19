@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fa; }
+    .main { padding: 20px; margin-left: 220px; }
+    header { background: #3498db; color: #fff; padding: 15px; border-radius: 10px; text-align: center; }
+    table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 20px; }
+    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #3498db; color: #fff; }
+    tr:hover { background: #f0f8ff; }
+    canvas { margin-top: 30px; background: #fff; padding: 20px; border-radius: 10px; }
+    img { max-width: 80px; max-height: 80px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard - Civic Issues</h1>
+  </header>
+
+  <div class="main">
+    <h2>Current Issues</h2>
+    <table id="issuesTable">
+      <thead>
+        <tr>
+          <th>Person ID</th>
+          <th>Problem ID</th>
+          <th>Date/Time</th>
+          <th>Location</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Image</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Issues by Type</h2>
+    <canvas id="issueChart" width="600" height="300"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjJXTNE-P6DQbujQCyzH-BA6vPBi3g_ds",
+      authDomain: "csci-81961.firebaseapp.com",
+      databaseURL: "https://csci-81961-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "csci-81961",
+      storageBucket: "csci-81961.appspot.com",
+      messagingSenderId: "820737989334",
+      appId: "1:820737989334:web:57ae22a6d50dbedc4d0777"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const issuesTableBody = document.querySelector("#issuesTable tbody");
+    const chartCtx = document.getElementById("issueChart").getContext("2d");
+    let issueChart;
+
+    function renderIssues(snapshot) {
+      const issues = snapshot.val();
+      issuesTableBody.innerHTML = "";
+      const counts = {};
+
+      if (!issues) {
+        issuesTableBody.innerHTML = '<tr><td colspan="8">No issues found</td></tr>';
+        return;
+      }
+
+      Object.entries(issues).forEach(([key, issue]) => {
+        let row = `<tr>
+          <td>${issue.person_id || "-"}</td>
+          <td>${key}</td>
+          <td>${issue.datetime || "-"}</td>
+          <td>${issue.location || "-"}</td>
+          <td>${issue.problem_type || "-"}</td>
+          <td>${issue.description || "-"}</td>
+          <td>${issue.imageUrl ? `<img src="${issue.imageUrl}" alt="issue image">` : "-"}</td>
+          <td>${issue.status || "pending"}</td>
+         <td>${issue.imageUrl ? `<img src="${issue.imageUrl}" alt="issue image">` : "-"}</td>
+        </tr>`;
+        issuesTableBody.innerHTML += row;
+
+        counts[issue.problem_type] = (counts[issue.problem_type] || 0) + 1;
+      });
+
+      const labels = Object.keys(counts);
+      const data = Object.values(counts);
+      if (issueChart) issueChart.destroy();
+      issueChart = new Chart(chartCtx, {
+        type: "bar",
+        data: { labels, datasets: [{ label: "Issues Count", data, backgroundColor: "#3498db" }] },
+      });
+    }
+
+    const issuesRef = ref(db, "issues/");
+    onValue(issuesRef, renderIssues);
+  </script>
+</body>
+</html>
