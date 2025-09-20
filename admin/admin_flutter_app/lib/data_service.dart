@@ -20,18 +20,38 @@ class DataService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Use collectionGroup if issues are subcollections under users
       final snapshot = await _firestore.collectionGroup('issues').get();
 
-      if (snapshot.docs.isNotEmpty) {
-        _data = snapshot.docs.map((doc) {
-          final d = doc.data();
-          d['id'] = doc.id; // keep document id
-          return d;
-        }).toList();
-      } else {
-        _data = [];
+      // Temporary grouping map
+      final Map<String, Map<String, dynamic>> grouped = {};
+
+      for (var doc in snapshot.docs) {
+        final d = doc.data();
+        final issueType = d['issue_type'] ?? 'Unknown';
+        final lat = d['latitude']?.toString() ?? '0.0';
+        final lng = d['longitude']?.toString() ?? '0.0';
+
+        // Unique key for grouping based on issue + location
+        final key = "$issueType-$lat-$lng";
+
+        if (grouped.containsKey(key)) {
+          grouped[key]!['count'] += 1;
+          grouped[key]!['ids'].add(doc.id);
+        } else {
+          grouped[key] = {
+            'issue_type': issueType,
+            'latitude': lat,
+            'longitude': lng,
+            'description': d['description'] ?? '',
+            'status': d['status'] ?? 'Pending',
+            'urgency': d['urgency'] ?? 'Medium',
+            'count': 1,
+            'ids': [doc.id],
+          };
+        }
       }
+
+      _data = grouped.values.toList();
 
       _isLoading = false;
       notifyListeners();

@@ -11,15 +11,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
- 
   @override
-void initState() {
-  super.initState();
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    Provider.of<DataService>(context, listen: false).fetchData();
-  });
-}
-
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DataService>(context, listen: false).fetchData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,45 +63,52 @@ void initState() {
             ),
           ),
           Expanded(
-  child: Consumer<DataService>(
-    builder: (context, dataService, child) {
-      if (dataService.isLoading) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      if (dataService.error != null) {
-        return Center(child: Text('Error: ${dataService.error}'));
-      }
-      if (dataService.data.isEmpty) {
-        return const Center(child: Text('No issues found'));
-      }
+            child: Consumer<DataService>(
+              builder: (context, dataService, child) {
+                if (dataService.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (dataService.error != null) {
+                  return Center(child: Text('Error: ${dataService.error}'));
+                }
+                if (dataService.data.isEmpty) {
+                  return const Center(child: Text('No issues found'));
+                }
 
-      return ListView.builder(
-        itemCount: dataService.data.length,
-        itemBuilder: (context, index) {
-          final issue = dataService.data[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: issue['urgency'] == 'High' ? Colors.red : Colors.orange,
-                child: Text('${index + 1}'),
-              ),
-              title: Text(issue['issue_type'] ?? 'Issue #${issue['id']}'),
-              subtitle: Text(issue['description'] ?? 'No description'),
-              trailing: Chip(
-                label: Text(issue['status'] ?? 'Pending'),
-                backgroundColor: issue['status'] == 'Resolved'
-                    ? Colors.green.shade100
-                    : Colors.orange.shade100,
-              ),
+                return ListView.builder(
+                  itemCount: dataService.data.length,
+                  itemBuilder: (context, index) {
+                    final issue = dataService.data[index];
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      elevation: 2,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: issue['urgency'] == 'High'
+                              ? Colors.red
+                              : Colors.orange,
+                          child: Text(
+                              '${issue['count']}'), // number of grouped complaints
+                        ),
+                        title: Text(
+                            "${issue['issue_type']} (${issue['count']} reports)"),
+                        subtitle: Text(
+                          "Location: ${issue['latitude']}, ${issue['longitude']}\n${issue['description']}",
+                        ),
+                        trailing: Chip(
+                          label: Text(issue['status']),
+                          backgroundColor: issue['status'] == 'Resolved'
+                              ? Colors.green.shade100
+                              : Colors.orange.shade100,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          );
-        },
-      );
-    },
-  ),
-),
-
+          ),
         ],
       ),
     );
