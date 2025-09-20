@@ -1,8 +1,0 @@
-# Replace these with YOUR actual Supabase database details
-DB_NAME=your_database_name
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=db.xxxxxxxxxxxxxxxxxxxxx.supabase.co
-DB_PORT=5432
-SECRET_KEY=django-insecure-replace-this-with-random-string
-DEBUG=True
