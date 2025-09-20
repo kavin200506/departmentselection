@@ -58,7 +58,7 @@ class StatusTimeline extends StatelessWidget {
                     )
                   : Text(
                       '${index + 1}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.darkGrey,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -103,7 +103,7 @@ class StatusTimeline extends StatelessWidget {
                     ),
                   )
                 else if (index == currentStep + 1)
-                  Text(
+                  const Text(
                     'In progress...',
                     style: TextStyle(
                       fontSize: 13,

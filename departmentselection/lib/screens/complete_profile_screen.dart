@@ -47,7 +47,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       );
       await ProfileService.upsertProfile(newProfile);
       Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => HomeScreen()),
+        context, MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } catch (e) {
       setState(() {
@@ -59,7 +59,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   void skipProfile() {
     Navigator.pushReplacement(
-      context, MaterialPageRoute(builder: (_) => HomeScreen()),
+      context, MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
@@ -172,7 +172,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           enabled: false,
                           decoration: InputDecoration(
                             labelText: "Email",
-                            prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
+                            prefixIcon: const Icon(Icons.email, color: Colors.blueAccent),
                             filled: true,
                             fillColor: Colors.blueGrey.withOpacity(0.07),
                             border: OutlineInputBorder(

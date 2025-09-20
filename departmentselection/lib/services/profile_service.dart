@@ -26,7 +26,6 @@ class ProfileService {
         profile.phoneNumber.trim().isNotEmpty &&
         profile.department.trim().isNotEmpty &&
         profile.address.trim().isNotEmpty &&
-        profile.dob != null &&
         profile.gender.trim().isNotEmpty;
         // add further validation if needed
   }

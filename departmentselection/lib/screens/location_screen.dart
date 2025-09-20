@@ -289,7 +289,7 @@ class _LocationScreenState extends State<LocationScreen> {
                       color: AppColors.primaryGreen.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -297,8 +297,8 @@ class _LocationScreenState extends State<LocationScreen> {
                           size: 14,
                           color: AppColors.primaryGreen,
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
+                        SizedBox(width: 4),
+                        Text(
                           'Live GPS',
                           style: TextStyle(
                             fontSize: 12,
@@ -471,7 +471,7 @@ class _LocationScreenState extends State<LocationScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: AppColors.primaryRed),
+                      const Icon(Icons.location_on, color: AppColors.primaryRed),
                       const SizedBox(width: 8),
                       const Text(
                         'Current Address',
@@ -483,7 +483,7 @@ class _LocationScreenState extends State<LocationScreen> {
                       ),
                       const Spacer(),
                       if (_locationPermissionGranted)
-                        Icon(
+                        const Icon(
                           Icons.verified,
                           color: AppColors.primaryGreen,
                           size: 20,
@@ -496,11 +496,11 @@ class _LocationScreenState extends State<LocationScreen> {
                     style: const TextStyle(fontSize: 14, color: AppColors.darkGrey),
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  const Row(
                     children: [
                       Icon(Icons.gps_fixed, color: AppColors.primaryBlue),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'GPS Coordinates',
                         style: TextStyle(
                           fontSize: 16,
@@ -523,7 +523,7 @@ class _LocationScreenState extends State<LocationScreen> {
                   ),
                   const SizedBox(height: 8),
                   if (_locationPermissionGranted)
-                    Text(
+                    const Text(
                       'Accuracy: High GPS',
                       style: TextStyle(
                         fontSize: 12,

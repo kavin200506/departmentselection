@@ -178,7 +178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           enabled: false,
                           decoration: InputDecoration(
                             labelText: "Email",
-                            prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
+                            prefixIcon: const Icon(Icons.email, color: Colors.blueAccent),
                             filled: true,
                             fillColor: Colors.blueGrey.withOpacity(0.07),
                             border: OutlineInputBorder(

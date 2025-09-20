@@ -45,15 +45,15 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
+              child: const Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle_outline,
                     color: Colors.white,
                     size: 60,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'Complaint Submitted Successfully!',
                     style: TextStyle(
                       fontSize: 22,
@@ -62,8 +62,8 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Your complaint has been registered and assigned to the relevant department.',
                     style: TextStyle(
                       fontSize: 16,
@@ -214,11 +214,11 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Rajesh Kumar',
                               style: TextStyle(
                                 fontSize: 18,
@@ -226,15 +226,15 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                                 color: AppColors.darkGrey,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: 4),
+                            Text(
                               'Senior Engineer - Road Department',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppColors.darkGrey,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Row(
                               children: [
                                 Icon(
@@ -242,8 +242,8 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                                   color: AppColors.primaryOrange,
                                   size: 16,
                                 ),
-                                const SizedBox(width: 4),
-                                const Text(
+                                SizedBox(width: 4),
+                                Text(
                                   '4.8 Rating',
                                   style: TextStyle(
                                     fontSize: 12,
@@ -416,7 +416,7 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
                         ),
                       );
                     },
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.star,
                       color: AppColors.primaryOrange,
                     ),

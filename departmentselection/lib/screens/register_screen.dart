@@ -57,7 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CircleAvatar(
                   radius: 48,
                   backgroundColor: Colors.blue.shade100,
-                  child: Icon(Icons.person_add, color: Colors.blue, size: 56),
+                  child: const Icon(Icons.person_add, color: Colors.blue, size: 56),
                 ),
                 const SizedBox(height: 24),
                 // Registration Container
@@ -90,7 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: emailController,
                         decoration: InputDecoration(
                           labelText: "Email",
-                          prefixIcon: Icon(Icons.email_outlined),
+                          prefixIcon: const Icon(Icons.email_outlined),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -102,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         obscureText: true,
                         decoration: InputDecoration(
                           labelText: "Password",
-                          prefixIcon: Icon(Icons.lock_outline),
+                          prefixIcon: const Icon(Icons.lock_outline),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -113,22 +113,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(errorMessage,
-                              style: TextStyle(color: Colors.red)),
+                              style: const TextStyle(color: Colors.red)),
                         ),
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: loading ? null : signUp,
-                          child: loading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text("Sign Up", style: TextStyle(fontSize: 16)),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: loading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text("Sign Up", style: TextStyle(fontSize: 16)),
                         ),
                       ),
                       const SizedBox(height: 12),

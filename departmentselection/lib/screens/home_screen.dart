@@ -17,14 +17,14 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.location_city,
               color: Colors.white,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'CivicHero',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
