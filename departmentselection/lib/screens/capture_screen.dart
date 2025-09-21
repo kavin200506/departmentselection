@@ -526,7 +526,7 @@ class _CaptureScreenState extends State<CaptureScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '🤖 AI Analyzing with Ultralytics...',
+                  '🤖 IgniteX AI Analyzing...',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryGreen,
@@ -550,74 +550,75 @@ class _CaptureScreenState extends State<CaptureScreen>
   }
 
   Widget _buildAIResultCard() {
-    final isSuccess = _aiResult!['success'] == true;
-    final confidence = _aiResult!['confidence'] as double? ?? 0.0;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
+  final isSuccess = _aiResult!['success'] == true;
+  final confidence = _aiResult!['confidence'] as double? ?? 0.0;
+  
+  return Container(
+    padding: const EdgeInsets.all(16),
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: isSuccess 
+          ? AppColors.primaryGreen.withOpacity(0.1)
+          : AppColors.primaryOrange.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
         color: isSuccess 
-            ? AppColors.primaryGreen.withOpacity(0.1)
-            : AppColors.primaryOrange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSuccess 
-              ? AppColors.primaryGreen.withOpacity(0.3)
-              : AppColors.primaryOrange.withOpacity(0.3),
-        ),
+            ? AppColors.primaryGreen.withOpacity(0.3)
+            : AppColors.primaryOrange.withOpacity(0.3),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isSuccess ? Icons.check_circle : Icons.help_outline,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              isSuccess ? Icons.check_circle : Icons.help_outline,
+              color: isSuccess ? AppColors.primaryGreen : AppColors.primaryOrange,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isSuccess ? '✅ IgniteX AI Detection Successful' : '⚠️ IgniteX AI Detection Uncertain',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
                 color: isSuccess ? AppColors.primaryGreen : AppColors.primaryOrange,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isSuccess ? '✅ Ultralytics AI Detection Successful' : '⚠️ Ultralytics AI Detection Uncertain',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isSuccess ? AppColors.primaryGreen : AppColors.primaryOrange,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          if (isSuccess) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Detected: ${_aiResult!['detected_issue']}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              'Confidence: ${(confidence * 100).toStringAsFixed(1)}%',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Form pre-populated with AI results. You can modify if needed.',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
+                fontSize: 16,
               ),
             ),
           ],
+        ),
+        if (isSuccess) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Detected: ${_aiResult!['detected_issue']}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            'Confidence: ${(confidence * 100).toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Form pre-populated with IgniteX AI results. You can modify if needed.',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
+
 
   Widget _buildAIErrorCard() {
     return Container(
@@ -637,7 +638,7 @@ class _CaptureScreenState extends State<CaptureScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '❌ Ultralytics AI Analysis Failed',
+                  '❌ IgniteX AI Analysis Failed',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryRed,
