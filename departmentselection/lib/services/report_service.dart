@@ -81,4 +81,18 @@ class ReportService {
     // 5. Save to Firestore
     await _firestore.collection('issues').doc(complainId).set(complaint.toMap());
   }
+
+  // Real-time stream of all complaints for the current user
+  static Stream<List<Complaint>> getUserComplaintsStream(String userId) {
+    // Listen to the Firestore 'issues' collection where 'user_id' matches current user UID,
+    // and order queries by 'reported_date' (latest first)
+    return _firestore
+        .collection('issues')
+        .where('user_id', isEqualTo: userId)
+        .orderBy('reported_date', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Complaint.fromMap(doc.data())).toList();
+    });
+  }
 }

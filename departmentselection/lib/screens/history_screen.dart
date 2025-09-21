@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/bottom_navigation.dart';
 import '../utils/constants.dart';
 import '../models/complaint.dart';
+import '../services/report_service.dart'; // Make sure this import exists!
 import 'status_tracker_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -14,70 +16,10 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   String _selectedFilter = 'All';
 
-  final List<Complaint> _complaints = [
-    Complaint(
-      complainId: 'CPT-2025-001234',
-      issueType: 'Pothole',
-      department: 'Road Department',
-      urgency: 'High',
-      latitude: 28.6139,
-      longitude: 77.2090,
-      address: 'MG Road, Delhi',
-      description: 'Large pothole causing traffic issues.',
-      status: 'In Progress',
-      reportedDate: DateTime.now().subtract(const Duration(hours: 2)),
-      imageUrl: '',
-      userId: 'user1',
-    ),
-    Complaint(
-      complainId: 'CPT-2025-001233',
-      issueType: 'Streetlight Broken',
-      department: 'Electrical Department',
-      urgency: 'Medium',
-      latitude: 28.6129,
-      longitude: 77.2080,
-      address: 'Sector 14, Noida',
-      description: 'Streetlight not working for 2 days.',
-      status: 'Resolved',
-      reportedDate: DateTime.now().subtract(const Duration(days: 1)),
-      imageUrl: '',
-      userId: 'user2',
-    ),
-    Complaint(
-      complainId: 'CPT-2025-001232',
-      issueType: 'Drainage Overflow',
-      department: 'Water & Sewerage',
-      urgency: 'Critical',
-      latitude: 28.6149,
-      longitude: 77.2100,
-      address: 'Block D, South Extension',
-      description: 'Drainage water overflowing since yesterday.',
-      status: 'Assigned',
-      reportedDate: DateTime.now().subtract(const Duration(days: 3)),
-      imageUrl: '',
-      userId: 'user1',
-    ),
-    Complaint(
-      complainId: 'CPT-2025-001231',
-      issueType: 'Garbage Pile',
-      department: 'Sanitation Department',
-      urgency: 'Low',
-      latitude: 28.6159,
-      longitude: 77.2110,
-      address: 'Community Park, Dwarka',
-      description: 'Garbage heap not collected for a week.',
-      status: 'Resolved',
-      reportedDate: DateTime.now().subtract(const Duration(days: 7)),
-      imageUrl: '',
-      userId: 'user3',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    List<Complaint> filteredComplaints = _selectedFilter == 'All'
-        ? _complaints
-        : _complaints.where((c) => c.status == _selectedFilter).toList();
+    // Get current user
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.blueGrey[50],
@@ -95,129 +37,152 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Filter Tabs
-          Container(
-            height: 56,
-            margin: const EdgeInsets.all(16),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: ['All', 'In Progress', 'Assigned', 'Resolved'].map((filter) {
-                bool isSelected = _selectedFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeInOut,
-                    child: FilterChip(
-                      label: Text(filter,
-                          style: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.darkGrey,
-                              fontWeight: FontWeight.bold)),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedFilter = filter;
-                        });
-                      },
-                      backgroundColor: Colors.white,
-                      selectedColor: AppColors.primaryBlue,
-                      labelStyle: TextStyle(fontSize: isSelected ? 17 : 15),
-                      elevation: isSelected ? 7 : 0,
-                      shadowColor: isSelected
-                          ? AppColors.primaryBlue.withOpacity(0.18)
-                          : Colors.transparent,
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primaryBlue
-                            : Colors.grey.withOpacity(0.08),
-                        width: 2,
+      body: user == null
+          ? const Center(child: Text('You must be logged in to see your complaints.'))
+          : StreamBuilder<List<Complaint>>(
+              stream: ReportService.getUserComplaintsStream(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Something went wrong: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+                final complaints = snapshot.data ?? [];
+                List<Complaint> filteredComplaints = _selectedFilter == 'All'
+                    ? complaints
+                    : complaints.where((c) => c.status == _selectedFilter).toList();
+
+                return Column(
+                  children: [
+                    // Filter Tabs
+                    Container(
+                      height: 56,
+                      margin: const EdgeInsets.all(16),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: ['All', 'In Progress', 'Assigned', 'Resolved'].map((filter) {
+                          bool isSelected = _selectedFilter == filter;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 14),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeInOut,
+                              child: FilterChip(
+                                label: Text(filter,
+                                    style: TextStyle(
+                                        color: isSelected ? Colors.white : AppColors.darkGrey,
+                                        fontWeight: FontWeight.bold)),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _selectedFilter = filter;
+                                  });
+                                },
+                                backgroundColor: Colors.white,
+                                selectedColor: AppColors.primaryBlue,
+                                labelStyle: TextStyle(fontSize: isSelected ? 17 : 15),
+                                elevation: isSelected ? 7 : 0,
+                                shadowColor: isSelected
+                                    ? AppColors.primaryBlue.withOpacity(0.18)
+                                    : Colors.transparent,
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.primaryBlue
+                                      : Colors.grey.withOpacity(0.08),
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(11)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(11)),
                     ),
-                  ),
+
+                    // Statistics Row
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                                'Total', complaints.length.toString(), AppColors.primaryBlue),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildStatCard(
+                                'Resolved',
+                                complaints.where((c) => c.status == 'Resolved').length.toString(),
+                                AppColors.primaryGreen),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildStatCard(
+                                'Pending',
+                                complaints.where((c) => c.status != 'Resolved').length.toString(),
+                                AppColors.primaryOrange),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Complaints List
+                    Expanded(
+                      child: filteredComplaints.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  TweenAnimationBuilder(
+                                    duration: const Duration(milliseconds: 900),
+                                    tween: Tween<double>(begin: 1, end: 1.15),
+                                    curve: Curves.elasticOut,
+                                    builder: (context, value, child) =>
+                                        Transform.scale(scale: value, child: child),
+                                    child: Icon(
+                                      Icons.inbox_rounded,
+                                      size: 100,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No ${_selectedFilter.toLowerCase()} complaints found',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Your complaint history will appear here',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              itemCount: filteredComplaints.length,
+                              itemBuilder: (context, index) {
+                                return _buildComplaintCard(filteredComplaints[index]);
+                              },
+                            ),
+                    ),
+                  ],
                 );
-              }).toList(),
+              },
             ),
-          ),
-
-          // Statistics Row
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                      'Total', _complaints.length.toString(), AppColors.primaryBlue),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildStatCard(
-                      'Resolved',
-                      _complaints.where((c) => c.status == 'Resolved').length.toString(),
-                      AppColors.primaryGreen),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildStatCard(
-                      'Pending',
-                      _complaints.where((c) => c.status != 'Resolved').length.toString(),
-                      AppColors.primaryOrange),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Complaints List
-          Expanded(
-            child: filteredComplaints.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TweenAnimationBuilder(
-                          duration: const Duration(milliseconds: 900),
-                          tween: Tween<double>(begin: 1, end: 1.15),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) =>
-                              Transform.scale(scale: value, child: child),
-                          child: Icon(
-                            Icons.inbox_rounded,
-                            size: 100,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No ${_selectedFilter.toLowerCase()} complaints found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Your complaint history will appear here',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    itemCount: filteredComplaints.length,
-                    itemBuilder: (context, index) {
-                      return _buildComplaintCard(filteredComplaints[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
       bottomNavigationBar: const CustomBottomNavigation(currentIndex: 1),
     );
   }
