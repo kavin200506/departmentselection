@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/bottom_navigation.dart';
 import '../utils/constants.dart';
+import '../models/complaint.dart';
+import '../services/report_service.dart';
 import 'capture_screen.dart';
 import 'status_tracker_screen.dart';
 import 'login_screen.dart';
@@ -52,177 +54,222 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Section with user email
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primaryBlue, AppColors.primaryBlue.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Show user's email
-                  if (user != null && user.email != null) ...[
-                    Row(
-                      children: [
-                        const Icon(Icons.account_circle, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text(
-                          user.email!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+      body: user == null
+          ? const Center(child: Text('You must be logged in to use the dashboard.'))
+          : StreamBuilder<List<Complaint>>(
+              stream: ReportService.getUserComplaintsStream(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Something went wrong: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+                final complaints = snapshot.data ?? [];
+
+                // Compute quick stats
+                final activeCount = complaints
+                    .where((c) => c.status != 'Resolved')
+                    .length;
+                final resolvedThisWeek = complaints
+                    .where((c) =>
+                        c.status == 'Resolved' &&
+                        c.reportedDate.isAfter(
+                          DateTime.now().subtract(const Duration(days: 7)),
+                        ))
+                    .length;
+
+                // Show up to 3 most recent complaints as activity
+                final recentComplaints = complaints.take(3).toList();
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Welcome Section with user email
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primaryBlue,
+                              AppColors.primaryBlue.withOpacity(0.8)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  const Text(
-                    'Welcome to CivicHero!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Report civic issues in your area and help make your city better.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CaptureScreen(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Show user's email
+                            if (user.email != null) ...[
+                              Row(
+                                children: [
+                                  const Icon(Icons.account_circle,
+                                      color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    user.email!,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            const Text(
+                              'Welcome to CivicHero!',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Report civic issues in your area and help make your city better.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CaptureScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.camera_alt,
+                                    color: AppColors.primaryBlue),
+                                label: const Text(
+                                  'Report New Issue',
+                                  style: TextStyle(
+                                    color: AppColors.primaryBlue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Quick Stats
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              'Active\nComplaints',
+                              activeCount.toString(),
+                              AppColors.primaryOrange,
+                              Icons.pending_outlined,
+                            ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
-                      label: const Text(
-                        'Report New Issue',
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              'Resolved\nThis Week',
+                              resolvedThisWeek.toString(),
+                              AppColors.primaryGreen,
+                              Icons.check_circle_outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Recent Activity
+                      const Text(
+                        'Recent Activity',
                         style: TextStyle(
-                          color: AppColors.primaryBlue,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.darkGrey,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Quick Stats
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Active\nComplaints',
-                    '12',
-                    AppColors.primaryOrange,
-                    Icons.pending_outlined,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Resolved\nThis Week',
-                    '8',
-                    AppColors.primaryGreen,
-                    Icons.check_circle_outline,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Recent Activity
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkGrey,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildActivityCard(
-              'Pothole Reported',
-              'Road Department',
-              'In Progress',
-              AppColors.primaryOrange,
-              Icons.construction,
-              () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const StatusTrackerScreen(),
+                      const SizedBox(height: 16),
+                      recentComplaints.isEmpty
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.inbox_rounded,
+                                    size: 80,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'No recent complaints filed',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Column(
+                              children: recentComplaints
+                                  .map((complaint) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 12),
+                                        child: _buildActivityCard(
+                                          complaint.issueType,
+                                          complaint.department,
+                                          complaint.status,
+                                          _getStatusColor(complaint.status),
+                                          _getIssueIcon(complaint.issueType),
+                                          () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const StatusTrackerScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                      const SizedBox(height: 100), // Space for bottom navigation
+                    ],
                   ),
                 );
               },
             ),
-
-            const SizedBox(height: 12),
-
-            _buildActivityCard(
-              'Streetlight Fixed',
-              'Electrical Department',
-              'Resolved',
-              AppColors.primaryGreen,
-              Icons.lightbulb_outline,
-              () {},
-            ),
-
-            const SizedBox(height: 12),
-
-            _buildActivityCard(
-              'Drainage Overflow',
-              'Water & Sewerage',
-              'Assigned',
-              AppColors.primaryBlue,
-              Icons.water_drop_outlined,
-              () {},
-            ),
-
-            const SizedBox(height: 100), // Space for bottom navigation
-          ],
-        ),
-      ),
       bottomNavigationBar: const CustomBottomNavigation(currentIndex: 0),
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+      String title, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -321,7 +368,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: statusColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
@@ -339,5 +387,33 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Resolved':
+        return AppColors.primaryGreen;
+      case 'In Progress':
+        return AppColors.primaryOrange;
+      case 'Assigned':
+        return AppColors.primaryBlue;
+      default:
+        return AppColors.darkGrey;
+    }
+  }
+
+  IconData _getIssueIcon(String issueType) {
+    switch (issueType) {
+      case 'Pothole':
+        return Icons.construction;
+      case 'Streetlight Broken':
+        return Icons.lightbulb_outline;
+      case 'Drainage Overflow':
+        return Icons.water_drop_outlined;
+      case 'Garbage Pile':
+        return Icons.delete_outline;
+      default:
+        return Icons.report_problem_outlined;
+    }
   }
 }
