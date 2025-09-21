@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/status_timeline.dart';
 import '../utils/constants.dart';
+import '../models/complaint.dart';
 
-class StatusTrackerScreen extends StatefulWidget {
-  const StatusTrackerScreen({super.key});  // Make sure this line has const
+class StatusTrackerScreen extends StatelessWidget {
+  final String complainId;
 
-  @override
-  State<StatusTrackerScreen> createState() => _StatusTrackerScreenState();
-}
-
-class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
-  int _currentStep = 1; // 0: Reported, 1: Assigned, 2: In Progress, 3: Resolved
+  const StatusTrackerScreen({super.key, required this.complainId});
 
   @override
   Widget build(BuildContext context) {
@@ -28,304 +25,190 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Success Message
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('issues')
+            .doc(complainId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final data = snapshot.data?.data();
+          if (data == null) {
+            return const Center(child: Text('Complaint not found.'));
+          }
+          final complaint = Complaint.fromMap(data as Map<String, dynamic>);
+          int currentStep = _getStepFromStatus(complaint.status);
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Animated icon and progress bar block
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 28),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryGreen.withOpacity(0.96),
+                        AppColors.primaryGreen.withOpacity(0.7)
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 800),
+                        child: Icon(
+                          _getSuccessIcon(complaint.status),
+                          key: ValueKey(complaint.status),
+                          color: Colors.white,
+                          size: 65,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 0, end: (currentStep+1)*0.25),
+                        duration: const Duration(milliseconds: 900),
+                        builder: (context, value, _) => LinearProgressIndicator(
+                          value: value,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          minHeight: 7,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        complaint.status == "Resolved"
+                          ? 'Complaint Resolved!'
+                          : 'Complaint Submitted Successfully!',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        ComplaintStatusMessage[complaint.status] ??
+                          'Your complaint is being processed.',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Column(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
+
+                const SizedBox(height: 24),
+
+                // Complaint Details
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    size: 60,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Complaint Submitted Successfully!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Your complaint has been registered and assigned to the relevant department.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Complaint Details
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Complaint Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkGrey,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildDetailRow('Complaint ID', 'CPT-2025-001234', Icons.confirmation_number),
-                  _buildDetailRow('Issue Type', 'Pothole', Icons.construction),
-                  _buildDetailRow('Department', 'Road Department', Icons.business),
-                  _buildDetailRow('Priority', 'High', Icons.priority_high),
-                  _buildDetailRow('Submitted', DateTime.now().toString().substring(0, 16), Icons.schedule),
-                  _buildDetailRow('Expected Resolution', '24 hours', Icons.timer),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Status Timeline
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Progress Tracker',
+                        'Complaint Details',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.darkGrey,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Text(
-                          'In Progress',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primaryOrange,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      const SizedBox(height: 16),
+                      _buildDetailRow('Complaint ID', complaint.complainId, Icons.confirmation_number),
+                      _buildDetailRow('Issue Type', complaint.issueType, _getIssueIcon(complaint.issueType)),
+                      _buildDetailRow('Department', complaint.department, Icons.business),
+                      _buildDetailRow('Priority', complaint.urgency, Icons.priority_high),
+                      _buildDetailRow('Submitted', complaint.reportedDate.toString().substring(0, 16), Icons.schedule),
+                      _buildDetailRow('Status', complaint.status, Icons.info_outline),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Status Timeline
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  StatusTimeline(currentStep: _currentStep),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Assigned Officer Details
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Assigned Officer',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkGrey,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
-                        child: const Icon(
-                          Icons.person,
-                          color: AppColors.primaryBlue,
-                          size: 30,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Rajesh Kumar',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.darkGrey,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Senior Engineer - Road Department',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.darkGrey,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  color: AppColors.primaryOrange,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '4.8 Rating',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.darkGrey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            onPressed: () {
-                              _showCallDialog(context);
-                            },
-                            icon: const Icon(Icons.phone),
-                            color: AppColors.primaryGreen,
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.primaryGreen.withOpacity(0.1),
+                          const Text(
+                            'Progress Tracker',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.darkGrey,
                             ),
                           ),
-                          const Text(
-                            'Call',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primaryGreen,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(complaint.status).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              complaint.status,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getStatusColor(complaint.status),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20),
+                      StatusTimeline(currentStep: currentStep),
                     ],
                   ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _showFeedbackDialog(context);
-                    },
-                    icon: const Icon(Icons.rate_review),
-                    label: const Text('Give Feedback'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppColors.primaryBlue),
-                      foregroundColor: AppColors.primaryBlue,
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        if (_currentStep < 3) {
-                          _currentStep++;
-                        }
-                      });
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh Status'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 60),
               ],
             ),
-            
-            const SizedBox(height: 100), // Space for bottom navigation
-          ],
-        ),
+          );
+        },
       ),
       bottomNavigationBar: const CustomBottomNavigation(currentIndex: 0),
     );
@@ -361,82 +244,68 @@ class _StatusTrackerScreenState extends State<StatusTrackerScreen> {
     );
   }
 
-  void _showCallDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Contact Officer'),
-          content: const Text('Would you like to call Rajesh Kumar at +91-9876543210?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Simulate call action
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Calling Rajesh Kumar...'),
-                    backgroundColor: AppColors.primaryGreen,
-                  ),
-                );
-              },
-              child: const Text('Call'),
-            ),
-          ],
-        );
-      },
-    );
+  static int _getStepFromStatus(String status) {
+    switch (status) {
+      case "Reported":
+        return 0;
+      case "Assigned":
+        return 1;
+      case "In Progress":
+        return 2;
+      case "Resolved":
+        return 3;
+      default:
+        return 0;
+    }
   }
 
-  void _showFeedbackDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Rate Your Experience'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('How satisfied are you with the service so far?'),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Thank you for rating ${index + 1} stars!'),
-                          backgroundColor: AppColors.primaryGreen,
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.star,
-                      color: AppColors.primaryOrange,
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
+  static IconData _getSuccessIcon(String status) {
+    switch (status) {
+      case "Resolved":
+        return Icons.verified;
+      case "In Progress":
+        return Icons.autorenew;
+      default:
+        return Icons.check_circle_outline;
+    }
   }
 
-  void _showShareDialog(BuildContext context) {
+  static Color _getStatusColor(String status) {
+    switch (status) {
+      case "Resolved":
+        return AppColors.primaryGreen;
+      case "In Progress":
+        return AppColors.primaryOrange;
+      case "Assigned":
+        return AppColors.primaryBlue;
+      default:
+        return AppColors.darkGrey;
+    }
+  }
+
+  static IconData _getIssueIcon(String issueType) {
+    switch (issueType) {
+      case 'Pothole':
+        return Icons.construction;
+      case 'Streetlight Broken':
+        return Icons.lightbulb_outline;
+      case 'Drainage Overflow':
+        return Icons.water_drop_outlined;
+      case 'Garbage Pile':
+        return Icons.delete_outline;
+      default:
+        return Icons.report_problem_outlined;
+    }
+  }
+
+  static const Map<String, String> ComplaintStatusMessage = {
+    "Reported": "Your complaint has been registered and assigned to the relevant department.",
+    "Assigned": "A municipal officer has been assigned to your complaint.",
+    "In Progress": "Work has started on your reported issue.",
+    "Resolved": "Congratulations! Your complaint has been resolved.",
+  };
+
+  static void _showShareDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

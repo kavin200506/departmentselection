@@ -73,9 +73,8 @@ class HomeScreen extends StatelessWidget {
                 final complaints = snapshot.data ?? [];
 
                 // Compute quick stats
-                final activeCount = complaints
-                    .where((c) => c.status != 'Resolved')
-                    .length;
+                final activeCount =
+                    complaints.where((c) => c.status != 'Resolved').length;
                 final resolvedThisWeek = complaints
                     .where((c) =>
                         c.status == 'Resolved' &&
@@ -250,7 +249,9 @@ class HomeScreen extends StatelessWidget {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (context) =>
-                                                    const StatusTrackerScreen(),
+                                                    StatusTrackerScreen(
+                                                        complainId:
+                                                            complaint.complainId),
                                               ),
                                             );
                                           },

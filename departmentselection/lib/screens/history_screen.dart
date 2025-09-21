@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/bottom_navigation.dart';
 import '../utils/constants.dart';
 import '../models/complaint.dart';
-import '../services/report_service.dart'; // Make sure this import exists!
+import '../services/report_service.dart'; // needed!
 import 'status_tracker_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -18,7 +18,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get current user
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -32,7 +31,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // Implement search functionality
+              // Add search logic if needed
             },
           ),
         ],
@@ -74,10 +73,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               duration: const Duration(milliseconds: 180),
                               curve: Curves.easeInOut,
                               child: FilterChip(
-                                label: Text(filter,
-                                    style: TextStyle(
-                                        color: isSelected ? Colors.white : AppColors.darkGrey,
-                                        fontWeight: FontWeight.bold)),
+                                label: Text(
+                                  filter,
+                                  style: TextStyle(
+                                      color: isSelected ? Colors.white : AppColors.darkGrey,
+                                      fontWeight: FontWeight.bold),
+                                ),
                                 selected: isSelected,
                                 onSelected: (selected) {
                                   setState(() {
@@ -106,7 +107,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
 
-                    // Statistics Row
+                    // Statistics Row (real time)
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
@@ -132,7 +133,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
 
                     // Complaints List
@@ -247,10 +247,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         color: Colors.white.withOpacity(0.99),
         child: InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const StatusTrackerScreen(),
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 350),
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    FadeTransition(
+                  opacity: animation,
+                  child: StatusTrackerScreen(complainId: complaint.complainId),
+                ),
               ),
             );
           },
@@ -313,8 +317,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: statusColor.withOpacity(0.1), width: 1.3),
+                        border: Border.all(color: statusColor.withOpacity(0.1), width: 1.3),
                       ),
                       child: Text(
                         complaint.status,
