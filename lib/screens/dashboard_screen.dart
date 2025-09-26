@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../auth_service.dart';
 import '../data_service.dart';
@@ -17,6 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String sortType = "Priority"; // default sorting set to Priority
   int agingDays = 0; // 0 = no filter
   String searchQuery = ''; // Search widget state
+  bool _showHeatmap = true; // ✅ new state to control heatmap visibility
 
   @override
   void initState() {
@@ -48,12 +51,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Consumer<DataService>(
         builder: (_, ds, __) {
-          if (ds.isLoading)
+          if (ds.isLoading) {
             return const Center(child: CircularProgressIndicator());
-          if (ds.error != null)
+          }
+          if (ds.error != null) {
             return Center(child: Text('Error: ${ds.error}'));
-          if (ds.data.isEmpty)
+          }
+          if (ds.data.isEmpty) {
             return const Center(child: Text('No issues found'));
+          }
 
           // Sidebar counts
           final urgencyCounts = <String, int>{};
@@ -154,6 +160,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       }),
+
+                      const SizedBox(height: 20),
+
+                      // ✅ Toggle Heatmap Button (below urgency level)
+                      ElevatedButton.icon(
+                        icon: Icon(
+                          _showHeatmap
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        label: Text(_showHeatmap
+                            ? 'Hide Heatmap'
+                            : 'Show Heatmap'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          minimumSize: const Size(double.infinity, 40),
+                        ),
+                        onPressed: () {
+                          setState(() => _showHeatmap = !_showHeatmap);
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -226,12 +253,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // ===== Dashboard Graph =====
-                      SizedBox(
-                        height: 180,
-                        child: _buildUrgencyChart(ds),
-                      ),
-                      const SizedBox(height: 16),
+                      // ===== Heatmap (conditionally rendered) =====
+                      if (_showHeatmap) ...[
+                        SizedBox(
+                          height: 300,
+                          child: FlutterMap(
+                            options: MapOptions(
+                              initialCenter: LatLng(20.5937, 78.9629),
+                              initialZoom: 5,
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate:
+                                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                                subdomains: const ['a', 'b', 'c'],
+                              ),
+                              MarkerLayer(
+                                markers: filteredIssues
+                                    .map((issue) => Marker(
+                                          point: LatLng(
+                                            (issue['latitude'] as double?) ??
+                                                0,
+                                            (issue['longitude'] as double?) ??
+                                                0,
+                                          ),
+                                          width: 20,
+                                          height: 20,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: _urgencyColor(
+                                                      issue['urgency'])
+                                                  .withOpacity(0.6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // ===== Issue List =====
                       Expanded(
@@ -297,7 +360,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           CrossAxisAlignment.end,
                                       children: [
                                         DropdownButton<String>(
-                                          value: issue['status'],
+                                          value: const [
+                                            'Reported',
+                                            'Assigned',
+                                            'In Progress',
+                                            'Resolved'
+                                          ].contains(issue['status'])
+                                              ? issue['status']
+                                              : 'Reported',
                                           underline: const SizedBox(),
                                           items: const [
                                             DropdownMenuItem(
@@ -354,8 +424,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ===== Helpers =====
-
   double _calculatePriorityScore(Map<String, dynamic> issue) {
     final baseScores = {
       'low': 10.0,
@@ -366,27 +434,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final urgency = (issue['urgency'] ?? 'medium').toString().toLowerCase();
     double score = baseScores[urgency] ?? 15.0;
 
-    // Age factor
     try {
       final reported = DateTime.tryParse(issue['reported_date'] ?? '');
       if (reported != null) {
         final daysOld = DateTime.now().difference(reported).inDays;
-        double ageFactor = (daysOld / 7) * 2.5; // 2.5% per week
+        double ageFactor = (daysOld / 7) * 2.5;
         if (ageFactor > 30) ageFactor = 30;
         score += ageFactor;
       }
     } catch (_) {}
 
-    // Status factor
-    if ((issue['status'] ?? '').toString().toLowerCase() == 'reported')
+    if ((issue['status'] ?? '').toString().toLowerCase() == 'reported') {
       score += 10.0;
+    }
 
-    // Dynamic report count factor (1–5%)
     final count = (issue['count'] as int?) ?? 1;
     final reportFactorPercent = (min(count, 50) / 50) * 5;
     score += score * (reportFactorPercent / 100);
 
-    // Clamp
     return score.clamp(0, 100);
   }
 
@@ -512,37 +577,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ===== Dashboard Graph =====
-  Widget _buildUrgencyChart(DataService ds) {
-    final urgencies = ['Critical', 'High', 'Medium', 'Low'];
-    final counts = urgencies.map((u) {
-      return ds.data
-          .where((i) => (i['urgency'] ?? '').toLowerCase() == u.toLowerCase())
-          .fold<int>(0, (sum, i) => sum + (i['count'] as int));
-    }).toList();
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: List.generate(4, (i) {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text('${counts[i]}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Container(
-              width: 30,
-              height: counts[i] * 2.0, // simple scale
-              color: _urgencyColor(urgencies[i]),
-            ),
-            const SizedBox(height: 4),
-            Text(urgencies[i], style: const TextStyle(fontSize: 12)),
-          ],
-        );
-      }),
-    );
-  }
-
   Future<void> _openFilterDialog(BuildContext context, DataService ds) async {
     String fmt(DateTime? d) =>
         d != null ? DateFormat('dd MMM yyyy').format(d) : '';
@@ -589,11 +623,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ? DateTimeRange(start: start!, end: end!)
                             : null,
                       );
-                      if (picked != null)
+                      if (picked != null) {
                         setDialog(() {
                           start = picked.start;
                           end = picked.end;
                         });
+                      }
                     },
                   ),
                 ],
@@ -643,10 +678,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           title: Text(o),
           value: checked,
           onChanged: (v) {
-            if (v == true)
+            if (v == true) {
               selected.add(o);
-            else
+            } else {
               selected.remove(o);
+            }
             onChange(List.from(selected));
           },
         );
