@@ -3,31 +3,35 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 class UltralyticsAIService {
+  // ✅ NEW MODEL CONFIGURATION
   static const String _apiUrl = 'https://predict.ultralytics.com';
-  static const String _apiKey = '62136b284fcca764aec069d7ddd705de453fdecce7'; // Your API key
-  static const String _modelUrl = 'https://hub.ultralytics.com/models/A69qnBQ3qstjoQSiJtIs'; // Your model
+  static const String _apiKey = '62136b284fcca764aec069d7ddd705de453fdecce7';
+  static const String _modelUrl = 'https://hub.ultralytics.com/models/VxsrWl4kOqQJHLMzd2wv'; // ✅ NEW MODEL
   
-  // Class mapping for your 3 classes
+  // ✅ NEW MODEL CLASSES: 5 classes (drainage, garbage, pothole, streetlight, waterleak)
   static const Map<String, String> _classToIssueType = {
+    'drainage': 'Drainage Overflow',
+    'garbage': 'Garbage Pile',
     'pothole': 'Pothole',
     'streetlight': 'Streetlight Broken',
-    'garbage': 'Garbage Pile',
+    'waterleak': 'Water Leak',
+    // Note: 'Road Crack' is NOT in the model - will be handled manually
   };
   
-  // Department mapping
+  // Department mapping (including Road Crack for manual selection)
   static const Map<String, String> _issueToDepartment = {
     'Pothole': 'Road Department',
     'Streetlight Broken': 'Electrical Department', 
     'Garbage Pile': 'Sanitation Department',
     'Water Leak': 'Water & Sewerage',
     'Drainage Overflow': 'Water & Sewerage',
-    'Road Crack': 'Road Department',
+    'Road Crack': 'Road Department', // Manual selection only
   };
 
-  /// ✅ MAIN API METHOD - Enhanced with IgniteX branding
+  /// ✅ MAIN API METHOD - Updated with 75% confidence threshold
   static Future<Map<String, dynamic>> analyzeImage(String firebaseImageUrl) async {
     try {
-      print('🏆 CIVICHERO IGNITEX AI ANALYSIS - Powered by Advanced Computer Vision');
+      print('🏆 CIVICHERO IGNITEX AI ANALYSIS - New 5-Class Model');
       print('🤖 Starting IgniteX AI Analysis...');
       print('📎 Firebase Image URL: $firebaseImageUrl');
       print('🔗 IgniteX API Endpoint: $_apiUrl');
@@ -38,7 +42,7 @@ class UltralyticsAIService {
       print('✅ IgniteX: Image downloaded: ${imageBytes.length} bytes');
       
       // Send to Ultralytics API (backend)
-      print('🚀 IgniteX: Sending to AI processing engine...');
+      print('🚀 IgniteX: Sending to NEW 5-class AI model...');
       final result = await _sendToIgniteXAPI(imageBytes);
       
       print('✅ IgniteX AI Analysis Complete');
@@ -76,7 +80,7 @@ class UltralyticsAIService {
     }
   }
 
-  /// Send image to IgniteX AI Engine (powered by Ultralytics backend)
+  /// ✅ Send image to NEW IgniteX AI Model
   static Future<Map<String, dynamic>> _sendToIgniteXAPI(Uint8List imageBytes) async {
     try {
       // Create multipart request
@@ -85,10 +89,10 @@ class UltralyticsAIService {
       // Add headers
       request.headers['x-api-key'] = _apiKey;
       
-      // Add form fields
+      // ✅ NEW MODEL PARAMETERS
       request.fields['model'] = _modelUrl;
       request.fields['imgsz'] = '640';
-      request.fields['conf'] = '0.25';
+      request.fields['conf'] = '0.25'; // Ultralytics will detect at 25%, we filter at 75% later
       request.fields['iou'] = '0.45';
       
       // Add image file
@@ -100,7 +104,7 @@ class UltralyticsAIService {
         ),
       );
       
-      print('📤 IgniteX: Sending request to AI processing engine...');
+      print('📤 IgniteX: Sending request to NEW 5-class model...');
       
       // Send request with timeout
       final streamedResponse = await request.send().timeout(
@@ -124,10 +128,10 @@ class UltralyticsAIService {
     }
   }
 
-  /// Process API response from IgniteX AI Engine
+  /// ✅ Process API response with 75% confidence threshold
   static Map<String, dynamic> _processIgniteXAPIResponse(Map<String, dynamic> apiResponse) {
     try {
-      print('🔄 IgniteX: Processing AI response...');
+      print('🔄 IgniteX: Processing NEW model AI response...');
       print('📊 IgniteX Raw response keys: ${apiResponse.keys.join(', ')}');
       
       // Check if response has images
@@ -139,13 +143,13 @@ class UltralyticsAIService {
       final firstImage = images[0] as Map<String, dynamic>;
       final results = firstImage['results'] as List<dynamic>? ?? [];
       
-      print('📊 IgniteX: Found ${results.length} detections');
+      print('📊 IgniteX: Found ${results.length} detections from NEW model');
       
       if (results.isEmpty) {
-        return _createNoDetectionResult('No detections found by IgniteX AI');
+        return _createNoDetectionResult('No civic issues detected by IgniteX AI');
       }
       
-      // Find best detection for civic issues
+      // ✅ Find best detection with 75% confidence threshold
       Map<String, dynamic>? bestDetection;
       double highestConfidence = 0.0;
       String? detectedClass;
@@ -156,18 +160,26 @@ class UltralyticsAIService {
         
         print('🔍 IgniteX Detection: $className (${(confidence * 100).toStringAsFixed(1)}%)');
         
-        // Check if it matches our civic issue classes
+        // Check if it matches our 5 civic issue classes
         if (_classToIssueType.containsKey(className) && confidence > highestConfidence) {
           highestConfidence = confidence;
           bestDetection = detection;
           detectedClass = className;
           
-          print('✅ IgniteX Best match: $className (${(confidence * 100).toStringAsFixed(1)}%)');
+          print('✅ IgniteX Best match so far: $className (${(confidence * 100).toStringAsFixed(1)}%)');
         }
       }
       
-      if (bestDetection == null || highestConfidence < 0.25) {
+      // ✅ CRITICAL: 75% confidence threshold check
+      const double MIN_CONFIDENCE = 0.75; // 75% threshold
+      
+      if (bestDetection == null) {
         return _createNoDetectionResult('No civic issue detected above IgniteX confidence threshold');
+      }
+      
+      if (highestConfidence < MIN_CONFIDENCE) {
+        print('⚠️ IgniteX: Confidence ${(highestConfidence * 100).toStringAsFixed(1)}% is below 75% threshold');
+        return _createLowConfidenceResult(detectedClass!, highestConfidence, bestDetection);
       }
       
       return _createIgniteXSuccessResult(detectedClass!, highestConfidence, bestDetection, results);
@@ -178,7 +190,7 @@ class UltralyticsAIService {
     }
   }
 
-  /// Create successful IgniteX detection result
+  /// ✅ Create successful detection result (>=75% confidence)
   static Map<String, dynamic> _createIgniteXSuccessResult(
     String detectedClass, 
     double confidence, 
@@ -187,39 +199,70 @@ class UltralyticsAIService {
   ) {
     final issueType = _classToIssueType[detectedClass]!;
     final department = _issueToDepartment[issueType]!;
-    final isHighConfidence = confidence >= 0.6;
     
-    print('🎯 IGNITEX AI DETECTION: $issueType (${(confidence * 100).toStringAsFixed(1)}%)');
+    print('🎯 IGNITEX AI HIGH CONFIDENCE DETECTION: $issueType (${(confidence * 100).toStringAsFixed(1)}%)');
     print('🏢 IgniteX Department Assignment: $department');
-    print('📊 IgniteX High Confidence: $isHighConfidence');
+    print('✅ IgniteX: Confidence meets 75% threshold - Auto-selecting');
     
     return {
       'success': true,
       'detected_issue': issueType,
       'ai_department': department,
       'confidence': confidence,
-      'message': isHighConfidence 
-          ? '🎯 HIGH CONFIDENCE IGNITEX AI DETECTION'
-          : '📊 MEDIUM CONFIDENCE IGNITEX AI - Please verify',
-      'requires_manual_selection': !isHighConfidence,
+      'message': '🎯 HIGH CONFIDENCE IGNITEX AI DETECTION (≥75%)',
+      'requires_manual_selection': false, // ✅ Auto-select because >=75%
       'is_ignitex_ai': true,
       'detection_metadata': {
-        'model': 'IgniteX Custom YOLO AI Engine',
+        'model': 'IgniteX Custom 5-Class YOLO Model',
         'api_endpoint': _apiUrl,
         'detected_class': detectedClass,
         'raw_detection': detection,
         'total_detections': allResults.length,
         'processing': 'IgniteX Cloud-based YOLO Inference',
         'ai_engine': 'IgniteX Computer Vision Platform',
+        'model_version': 'v2.0-5class',
       },
       'technical_details': {
-        'confidence_threshold': '25%',
-        'high_confidence_threshold': '60%',
+        'confidence_threshold': '75%',
+        'detection_confidence': '${(confidence * 100).toStringAsFixed(1)}%',
         'image_size': '640x640',
-        'model_type': 'IgniteX YOLOv8 Custom Trained',
-        'api_version': 'IgniteX AI Platform v1.0',
+        'model_type': 'IgniteX YOLOv8 Custom 5-Class',
+        'api_version': 'IgniteX AI Platform v2.0',
         'processing_engine': 'Advanced Computer Vision by IgniteX',
         'all_detections': allResults,
+        'classes_trained': ['drainage', 'garbage', 'pothole', 'streetlight', 'waterleak'],
+      },
+    };
+  }
+
+  /// ✅ Create low confidence result (<75%) - requires manual selection
+  static Map<String, dynamic> _createLowConfidenceResult(
+    String detectedClass,
+    double confidence,
+    Map<String, dynamic> detection,
+  ) {
+    final issueType = _classToIssueType[detectedClass]!;
+    final department = _issueToDepartment[issueType]!;
+    
+    print('📊 IGNITEX AI LOW CONFIDENCE: $issueType (${(confidence * 100).toStringAsFixed(1)}%)');
+    print('⚠️ IgniteX: Below 75% threshold - Requires manual selection');
+    
+    return {
+      'success': true, // Detection was made, but low confidence
+      'detected_issue': issueType, // Show suggestion
+      'ai_department': department, // Show suggested department
+      'confidence': confidence,
+      'message': '⚠️ LOW CONFIDENCE (${(confidence * 100).toStringAsFixed(1)}%) - Please verify and select manually',
+      'requires_manual_selection': true, // ✅ Must select manually because <75%
+      'is_ignitex_ai': true,
+      'low_confidence_warning': true,
+      'detection_metadata': {
+        'model': 'IgniteX Custom 5-Class YOLO Model',
+        'detected_class': detectedClass,
+        'raw_detection': detection,
+        'reason': 'Confidence below 75% threshold',
+        'suggested_issue': issueType,
+        'model_version': 'v2.0-5class',
       },
     };
   }
@@ -233,27 +276,31 @@ class UltralyticsAIService {
       'detected_issue': null,
       'ai_department': null,
       'confidence': 0.0,
-      'message': 'IgniteX AI: $reason',
+      'message': 'IgniteX AI: $reason - Please select manually',
       'requires_manual_selection': true,
       'is_ignitex_ai': true,
+      'detection_metadata': {
+        'reason': reason,
+        'model_version': 'v2.0-5class',
+      },
     };
   }
 
-  /// Get department for issue type
+  /// Get department for issue type (including Road Crack)
   static String getDepartmentForIssue(String issueType) {
     return _issueToDepartment[issueType] ?? 'Municipal Services Department';
   }
 
-  /// Check if result is high confidence
+  /// ✅ Check if result has HIGH confidence (>=75%)
   static bool isHighConfidence(Map<String, dynamic> result) {
     final confidence = result['confidence'] as double? ?? 0.0;
-    return confidence >= 0.6 && result['success'] == true;
+    return confidence >= 0.75 && result['success'] == true; // ✅ 75% threshold
   }
 
   /// Test IgniteX AI connectivity
   static Future<bool> testAPIConnection() async {
     try {
-      print('🔍 Testing IgniteX AI connectivity...');
+      print('🔍 Testing IgniteX AI connectivity (NEW 5-class model)...');
       
       final response = await http.get(
         Uri.parse(_apiUrl),
@@ -267,5 +314,22 @@ class UltralyticsAIService {
       print('❌ IgniteX AI connectivity test failed: $e');
       return false;
     }
+  }
+
+  /// ✅ Get list of all available issue types (including manual Road Crack)
+  static List<String> getAllIssueTypes() {
+    return [
+      'Pothole',
+      'Streetlight Broken',
+      'Garbage Pile',
+      'Water Leak',
+      'Drainage Overflow',
+      'Road Crack', // Manual selection only - not in AI model
+    ];
+  }
+
+  /// ✅ Check if an issue type is AI-detectable
+  static bool isAIDetectable(String issueType) {
+    return _classToIssueType.values.contains(issueType);
   }
 }
